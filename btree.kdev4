@@ -1,0 +1,4 @@
+[Project]
+Name=btree
+Manager=KDevCustomMakeManager
+VersionControl=kdevgit
