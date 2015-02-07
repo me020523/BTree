@@ -5,10 +5,8 @@
 class TreeNode
 {
 public:
-    virtual int getKeyCount() = 0;
-    virtual int getChildCount() = 0;
     virtual bool search(int key) = 0;
-    virtual TreeNode insert(int key) = 0;
+    virtual TreeNode* insert(int key) = 0;
     virtual bool del(int key) = 0;
     virtual void visit() = 0;
     virtual bool isLeaf() = 0;
@@ -17,15 +15,15 @@ public:
     virtual int* getKeys() = 0;
     virtual int getKeyCount() = 0;
     virtual int getChildCount() = 0;
-    virtual TreeNode* getChildren() = 0;
+    virtual TreeNode** getChildren() = 0;
     
     /**
      *添加删除子结点，只有内部结点有效
      */
-    virtual void addChild(int p,TreeNode t) = 0;
-    virtual void delChild(TreeNode t) = 0;
+    virtual void addChild(int p,TreeNode *t) = 0;
+    virtual void delChild(TreeNode *t) = 0;
 protected:
-    virtual TreeNode split(int p) = 0;
+    virtual TreeNode* split(int p) = 0;
 };
 class InternalTreeNode : public TreeNode
 {
@@ -34,40 +32,40 @@ public:
     ~InternalTreeNode();
     int getKeyCount()
     {
-	return keyCount;
+        return keyCount;
     }
     int *getKeys()
     {
-	return keys;
+        return keys;
     }
     int getChildCount()
     {
-	return childCount;
+        return childCount;
     }
-    TreeNode *getChildren()
+    TreeNode** getChildren()
     {
-	return child;
+        return child;
     }
     bool search(int key);
-    TreeNode insert(int key);
+    TreeNode* insert(int key);
     bool del(int key);
     void visit();
     bool isLeaf()
     {
-	return false;
+        return false;
     }
     int getMaxKey();
     int getMinKey();
     
-    void addChild(int p,TreeNode t);
-    void delChild(TreeNode t);
+    void addChild(int p,TreeNode* t);
+    void delChild(TreeNode* t);
 protected:
-    TreeNode split(int p);
+    TreeNode* split(int p);
 private:
     int keyCount;
     int childCount;
     int *keys;
-    TreeNode *child;
+    TreeNode** child;
     int order;
 };
 class LeafTreeNode: public TreeNode
@@ -77,39 +75,37 @@ public:
     ~LeafTreeNode();
     int getKeyCount()
     {
-	return keyCount;
+        return keyCount;
     }
-    int *getKeys()
+    int *getkeys()
     {
-	return keys;
+        return keys;
     }
-    int getChildCount()
+    int getchildcount()
     {
-	return 0;
+        return 0;
     }
-    TreeNode *getChildren()
+    TreeNode** getChildren()
     {
-	return NULL;
+        return NULL;
     }
     bool search(int key);
-    TreeNode insert(int key);
+    TreeNode* insert(int key);
     bool del(int key);
     void visit();
     bool isLeaf()
     {
-	return true;
+        return true;
     }
     int getMaxKey();
     int getMinKey();
-    int *getKeys();
-    TreeNode *getChildren();
     
-    void addChild(int p,TreeNode t){};
-    void delChild(TreeNode t){};
+    void addChild(int p,TreeNode* t){};
+    void delChild(TreeNode* t){};
 protected:
-    TreeNode split(int p)
+    TreeNode* split(int p)
     {
-	return NULL;
+	return (TreeNode*)NULL;
     }
 private:
     int keyCount;
@@ -119,9 +115,9 @@ private:
 class BTree
 {
 public:
-    Btree();
-    ~Btree();
-    void search(int key);
+    BTree(int order);
+    ~BTree();
+    bool search(int key);
     bool insert(int key);
     bool del(int key);
     void visit();
