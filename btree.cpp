@@ -51,9 +51,9 @@ TreeNode* InternalTreeNode::insert(int key, int value)
     
     if(childCount < order)
     {
-	//结点未满
-	this->addChild(i + 1,tmp);
-	return this;
+        //结点未满
+        this->addChild(i + 1,tmp);
+        return this;
     }
     
     //结点已满,当前结点分裂
@@ -88,11 +88,92 @@ void InternalTreeNode::addChild(int p,TreeNode* t)
     ++keyCount;
 }
 /**
+ * 删除key
+ * 说明:本质是删除叶子结点中的键值对，所以存在以下情况:
+ * 	1) 叶子结点被清空，释放叶子结点，同时删除其在父结点中的引用，并引出以下两个问题
+ * 	    1))父结点的子树数不满足B树的要求，需要进行合并操作
+ *	    2))父结点的子树数满足B树的要求 
+ * 	2) 叶子结点未被清空，不作任何处理
+ * 返回值:
+ * 	非NULL: 该子结点不满足B树结点要求，需要进行合并操作
+ * 	NULL: 子结点満足B树结点要求
+ */
+TreeNode* InternalTreeNode::del(int key)
+{
+    int i = 0;
+    for(i = 0; i < keyCount; i++)
+    {
+	if(keys[i] >= key)
+	    break;
+    }
+    
+    TreeNode* p = child[i]->del(key);
+    if(!p && p->isLeaf())
+    {
+	delete p;
+	return NULL;
+    }
+    else
+	return NULL;
+    
+    int half = (order >> 1);
+    if(order % 2)
+	half = half + 1;
+    int minChildCount = half;
+    
+    //试图从兄弟结点中获取一个
+    InternalTreeNode *q = NULL;
+    int j = 0;
+    for(j = 0; j < childCount; j++)
+    {
+	q = (InternalTreeNode *)child[j];
+	if(q->childCount > minChildCount)
+	    break;
+    }
+    
+    if(j < childCount)
+    {
+	//找到有效的兄弟结点
+	int tempKey = q->keys[q->keyCount - 1];
+	TreeNode *s = q->child[q->childCount - 1];
+	int k = 0;
+	for(k = 0; k < keyCount; k++)
+	{
+	    if(tempKey <= q->keys[k])
+		break;
+	}
+	p->addChild(k,s);
+	//调整兄弟结点
+	q->delChild(q->childCount -1);
+	return NULL;
+    }
+    
+    //未找到有效的兄弟结点，进行结点合并
+    
+    
+    return this;
+}
+/**
+ * 返回值: 返回合并后的结点
+ */
+TreeNode *InternalTreeNode::merge(int p)
+{
+    
+}
+
+/**
  * 删除子结点
  */
-void InternalTreeNode::delChild(TreeNode* t)
+void InternalTreeNode::delChild(int p)
 {
-
+    for(int i = p; i < childCount - 1; i++)
+	child[i] = child[i + 1];
+    --childCount;
+    child[childCount] == NULL;
+    for(int i = p - 1; i < keyCount - 1; i++)
+	keys[i] = keys[i + 1];
+    --keyCount;
+    keys[keyCount] = -1;
 }
 
 /**
@@ -148,13 +229,7 @@ void InternalTreeNode::visit()
 {
 
 }
-/**
- * 删除key
- */
-bool InternalTreeNode::del(int key)
-{
-    return false;
-}
+
 ////////////////////////////////////////////////////////////////////
 //the implementation of class LeafTreeNode
 LeafTreeNode::LeafTreeNode(int order)
@@ -221,9 +296,21 @@ TreeNode* LeafTreeNode::insert(int key,int value)
     
     return p;
 }
-bool LeafTreeNode::del(int key)
+TreeNode* LeafTreeNode::del(int key)
 {
-    return false;
+    int i = 0;
+    for(i = 0; i < keyCount; i++)
+    {
+	if(key == keys[i])
+	    break;
+    }
+    for(int j = i; j < keyCount - 1; j++)
+	keys[j] = keys[j + 1];
+    keyCount--;
+    
+    if(keyCount == 0)
+	return this;
+    return NULL;
 }
 void LeafTreeNode::visit()
 {
@@ -287,7 +374,7 @@ bool BTree::insert(int key,int value)
     }
     return false;
 }
-bool BTree::del(int key)
+TreeNode* BTree::del(int key)
 {
     return false;
 }
