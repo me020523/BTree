@@ -110,7 +110,7 @@ TreeNode* InternalTreeNode::del(int key)
     TreeNode* p = child[i]->del(key);
     if(!p && p->isLeaf())
     {
-	delete p;
+	delete (LeafTreeNode*)p;
 	return NULL;
     }
     else
@@ -151,7 +151,7 @@ TreeNode* InternalTreeNode::del(int key)
     //未找到有效的兄弟结点，进行结点合并
     merge(i,i + 1);
     delChild(i);
-    delete p;
+    delete (InternalTreeNode*)p;
     --childCount;
     
     if(childCount < minChildCount)
@@ -197,7 +197,7 @@ void InternalTreeNode::delChild(int p)
     for(int i = p; i < childCount - 1; i++)
 	child[i] = child[i + 1];
     --childCount;
-    child[childCount] == NULL;
+    child[childCount] = NULL;
     for(int i = p - 1; i < keyCount - 1; i++)
 	keys[i] = keys[i + 1];
     --keyCount;
@@ -296,8 +296,8 @@ int LeafTreeNode::search(int key)
 }
 TreeNode* LeafTreeNode::insert(int key,int value)
 {
-    int value = search(key);
-    if(value >= 0)
+    int v = search(key);
+    if(v >= 0)
 	return this;  //the record already exists
     if(keyCount < (order - 1))
     {
@@ -363,11 +363,11 @@ BTree::~BTree()
 {
     
 }
-bool BTree::search(int key)
+int BTree::search(int key)
 {
     if(root)
-    return root->search(key);
-    return false;
+	return root->search(key);
+    return -1;
 }
 bool BTree::insert(int key,int value)
 {
@@ -378,7 +378,7 @@ bool BTree::insert(int key,int value)
 	return root->insert(key,value);
     if(root->isLeaf())
     {
-	InternalTreeNode *p = new InternalTreeNode(order);
+	TreeNode *p = new InternalTreeNode(order);
 	p->addChild(0,root);
 	root = p;
 	p = new LeafTreeNode(order);
@@ -388,12 +388,12 @@ bool BTree::insert(int key,int value)
     }
     else
     {
-	InternalTreeNode *p = root->insert(key,value);
+	TreeNode *p = root->insert(key,value);
 	if(p == root)
 	    return true;
 	else
 	{
-	    InternalTreeNode *q = new InternalTreeNode(order);
+	    TreeNode *q = new InternalTreeNode(order);
 	    q->addChild(0,root);
 	    q->addChild(1,p);
 	    root = q;
@@ -402,11 +402,12 @@ bool BTree::insert(int key,int value)
     }
     return false;
 }
-TreeNode* BTree::del(int key)
+bool BTree::del(int key)
 {
     if(root == NULL)
-	return;
+	return false;
     root->del(key);
+    return true;
 }
 void BTree::visit()
 {

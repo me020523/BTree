@@ -30,13 +30,13 @@ protected:
     //在位置p处分割结点
     virtual TreeNode* split(int p) = 0;
     //在位置p处结点
-    virtual TreeNode* merge(int p) = 0;
+    virtual TreeNode* merge(int p,int q) = 0;
 };
 class InternalTreeNode : public TreeNode
 {
 public:
     InternalTreeNode(int order);
-    ~InternalTreeNode();
+    virtual ~InternalTreeNode();
     int search(int key);
     TreeNode* insert(int key,int value);
     TreeNode* del(int key);
@@ -68,8 +68,8 @@ class LeafTreeNode: public TreeNode
 {
 public:
     LeafTreeNode(int order);
-    ~LeafTreeNode();
-    int search(int key,int value);
+    virtual ~LeafTreeNode();
+    int search(int key);
     TreeNode* insert(int key,int value);
     TreeNode* del(int key);
     void visit();
@@ -87,8 +87,8 @@ public:
     void addChild(int p,TreeNode* t){};
     void delChild(int p){};
 protected:
-    TreeNode* split(int p){};
-    TreeNode* merge(int p,int q){};
+    TreeNode* split(int p){return NULL;};
+    TreeNode* merge(int p,int q){return NULL;};
 private:
     int keyCount;
     int *keys;
@@ -100,9 +100,9 @@ class BTree
 public:
     BTree(int order);
     ~BTree();
-    bool search(int key);
+    int search(int key);
     bool insert(int key,int value);
-    TreeNode* del( int key );
+    bool del( int key );
     void visit();
 private:
     int order;
