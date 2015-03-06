@@ -1,4 +1,5 @@
 #include "btree.h"
+#include <iostream>
 
 //implementation of class InternalTreeNode-----------------------------
 InternalTreeNode::InternalTreeNode(int order)
@@ -39,14 +40,14 @@ TreeNode* InternalTreeNode::insert(int key, int value)
     int i = 0;
     for(i = 0; i < keyCount; i++)
     {
-        if(keys[i] == true)
+        if(keys[i] == value)
             return NULL;
         if(keys[i] > key)
             break;
     }
     TreeNode* tmp = child[i]->insert(key,value);
     
-    if(tmp == this)
+    if(tmp == child[i])
 	return this;
     
     if(childCount < order)
@@ -67,26 +68,53 @@ TreeNode* InternalTreeNode::insert(int key, int value)
     if(cut_point < half)
 	addChild(i + 1,tmp);
     else
-	addChild((i + 1) - cut_point,tmp);
+	tmp_2->addChild((i + 1) - cut_point,tmp);
+    if(((InternalTreeNode*)tmp_2)->childCount == 1)
+    {
+	tmp_2->addChild(child[childCount - 1]);
+	child[childCount - 1] = NULL;
+	--childCount;
+	keys[keyCount - 1] = -1;
+	--keyCount;
+    }
     return tmp_2;
 }
 void InternalTreeNode::addChild(int p,TreeNode* t)
 {
     int min = t->getMinKey();
     
-    for(int j = keyCount - 1; j >= p - 1 ; j--)
+    if(childCount > 0)
     {
-	keys[j + 1] = keys[j];
+	for(int j = keyCount - 1; j >= p - 1 && j >= 0; j--)
+	{
+	    keys[j + 1] = keys[j];
+	}
+	if(keyCount > 0)
+	    keys[p - 1] = min;
+	else
+	    keys[0] = min;
+	++keyCount;
     }
+    
     for(int j = childCount - 1; j >= p; j--)
     {
 	child[j + 1] = child[j];
     }
-    keys[p - 1] = min;
     child[p] = t;
     ++childCount;
-    ++keyCount;
 }
+void InternalTreeNode::addChild(TreeNode *p)
+{
+    int min = p->getMinKey();
+    int i = 0;
+    for(i = 0; i < keyCount; i++)
+    {
+	if(keys[i] >= min)
+	    break;
+    }
+    addChild(i,p);
+}
+
 /**
  * 删除key
  * 说明:本质是删除叶子结点中的键值对，所以存在以下情况:
@@ -221,11 +249,12 @@ TreeNode* InternalTreeNode::split(int p)
 	if(i < kc)
 	{
 	    q->keys[q->keyCount++] = keys[i];
-	    keys[i] = 0;
+	    keys[i] = -1;
 	    --keyCount;
 	}
     }
-    keys[p - 1] = 0;
+    keys[p - 1] = -1;
+    --keyCount;
     return q;
 }
 /**
@@ -234,10 +263,11 @@ TreeNode* InternalTreeNode::split(int p)
  */
 int InternalTreeNode::getMinKey()
 {
-    if(isLeaf())
-	return keys[0];
-    else
-	return child[0]->getMinKey();
+//     if(isLeaf())
+// 	return keys[0];
+//     else
+// 	return child[0]->getMinKey();
+    return keys[0];
 }
 /**
  * 返回子树的最大键值
@@ -245,17 +275,22 @@ int InternalTreeNode::getMinKey()
  */
 int InternalTreeNode::getMaxKey()
 {
-    if(isLeaf())
-	return keys[keyCount - 1];
-    else
-	return child[childCount - 1]->getMaxKey();
+//     if(isLeaf())
+// 	return keys[keyCount - 1];
+//     else
+// 	return child[childCount - 1]->getMaxKey();
+    return keys[keyCount - 1];
 }
 /**
  *遍历结点
  */
 void InternalTreeNode::visit()
 {
-
+    for(int i = 0; i < keyCount; i++)
+	std::cout << keys[i] << " ";
+    std::cout << std::endl;
+    for(int i = 0;  i < childCount; i++)
+	child[i]->visit();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -313,14 +348,15 @@ TreeNode* LeafTreeNode::insert(int key,int value)
 	}
 	keys[j] = key;
 	values[j] = value;
+	keyCount++;
 	
 	return this;
     }
     
     //the current leaf node is full, a new leaf node must be created
     LeafTreeNode *p = new LeafTreeNode(order);
-    p->keys[keyCount] = key;
-    p->values[keyCount++] = value;
+    p->keys[p->keyCount] = key;
+    p->values[p->keyCount++] = value;
     
     return p;
 }
@@ -342,7 +378,10 @@ TreeNode* LeafTreeNode::del(int key)
 }
 void LeafTreeNode::visit()
 {
-    
+    for(int i = 0; i < keyCount; i++)
+	std::cout << "(" << keys[i] << ":" << values[i] << ")" << " ";
+
+    std::cout << std::endl;
 }
 int LeafTreeNode::getMaxKey()
 {
@@ -350,7 +389,7 @@ int LeafTreeNode::getMaxKey()
 }
 int LeafTreeNode::getMinKey()
 {
-    return keys[keyCount - 1];
+    return keys[0];
 }
 //////////////////////////////////////////////////////////////////////////////
 //the implemetation of class BTree
@@ -373,34 +412,15 @@ bool BTree::insert(int key,int value)
 {
     if(!root)
 	root = new LeafTreeNode(order);
-    
-    if(!root->isFull())
-	return root->insert(key,value);
-    if(root->isLeaf())
+    TreeNode *p = root->insert(key,value);
+    if(p != root)
     {
-	TreeNode *p = new InternalTreeNode(order);
-	p->addChild(0,root);
-	root = p;
-	p = new LeafTreeNode(order);
-	p->insert(key,value);
-	root->addChild(1,p);
-	return true;
+	TreeNode *q = new InternalTreeNode(order);
+	q->addChild(0,root);
+	q->addChild(1,p);
+	root = q;
     }
-    else
-    {
-	TreeNode *p = root->insert(key,value);
-	if(p == root)
-	    return true;
-	else
-	{
-	    TreeNode *q = new InternalTreeNode(order);
-	    q->addChild(0,root);
-	    q->addChild(1,p);
-	    root = q;
-	    return true;
-	}
-    }
-    return false;
+    return true;
 }
 bool BTree::del(int key)
 {
@@ -411,5 +431,5 @@ bool BTree::del(int key)
 }
 void BTree::visit()
 {
-    
+    root->visit();
 }

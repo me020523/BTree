@@ -24,6 +24,7 @@ public:
     virtual int getMinKey() = 0;
     //在当前结点的指定位置添加新的子结点
     virtual void addChild(int p,TreeNode *t) = 0;
+    virtual void addChild(TreeNode *t) = 0;
     //删除当前结点指定位置处的子结点 
     virtual void delChild(int p) = 0;
 protected:
@@ -53,6 +54,7 @@ public:
     int getMinKey();
     
     void addChild(int p,TreeNode* t);
+    void addChild(TreeNode *p);
     void delChild(int p);
 protected:
     TreeNode* split(int p);
@@ -85,6 +87,7 @@ public:
     int getMinKey();
     
     void addChild(int p,TreeNode* t){};
+    void addChild(TreeNode *t){};
     void delChild(int p){};
 protected:
     TreeNode* split(int p){return NULL;};
