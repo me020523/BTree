@@ -56,7 +56,7 @@ public:
     void delChild(int p);
 protected:
     TreeNode* split(int p);
-    TreeNode* merge(int p);
+    TreeNode* merge(int p,int q);
 private:
     int keyCount;
     int childCount;
@@ -88,7 +88,7 @@ public:
     void delChild(int p){};
 protected:
     TreeNode* split(int p){};
-    TreeNode* merge(int p){};
+    TreeNode* merge(int p,int q){};
 private:
     int keyCount;
     int *keys;

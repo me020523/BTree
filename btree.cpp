@@ -149,16 +149,44 @@ TreeNode* InternalTreeNode::del(int key)
     }
     
     //未找到有效的兄弟结点，进行结点合并
+    merge(i,i + 1);
+    delChild(i);
+    delete p;
+    --childCount;
     
+    if(childCount < minChildCount)
+	return this;
     
-    return this;
+    return NULL;
 }
 /**
  * 返回值: 返回合并后的结点
  */
-TreeNode *InternalTreeNode::merge(int p)
+TreeNode *InternalTreeNode::merge(int p,int q)
 {
+    int min = 0,max = 0;
+    if(p == q)
+	return NULL;
     
+    if(p > q)
+    {
+	max = p;
+	min = q;
+    }
+    else
+    {
+	max = q;
+	min = p;
+    }
+    
+    InternalTreeNode *s =(InternalTreeNode*) child[max];
+    InternalTreeNode *t =(InternalTreeNode*) child[min];
+    
+    for(int i = t->childCount - 1; i >= 0; i--)
+    {
+	s->addChild(0,t->child[i]);
+    }
+    return s;
 }
 
 /**
@@ -376,7 +404,9 @@ bool BTree::insert(int key,int value)
 }
 TreeNode* BTree::del(int key)
 {
-    return false;
+    if(root == NULL)
+	return;
+    root->del(key);
 }
 void BTree::visit()
 {
