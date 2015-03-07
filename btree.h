@@ -7,7 +7,8 @@ class BTree;
 class TreeNode
 {
 public:
-    friend class BTree;
+    TreeNode(){};
+    virtual ~TreeNode(){};
     //whether the node is full or not
     virtual bool isFull() = 0;
     //从树中搜索指定的关键字，并返回其值，若不存在则返回-1

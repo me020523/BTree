@@ -128,7 +128,7 @@ void InternalTreeNode::addChild(TreeNode *p)
  * 返回值:
  * 	非NULL: 该子结点不满足B树结点要求，需要进行合并操作
  * 	NULL: 子结点満足B树结点要求
- */
+ **/
 TreeNode* InternalTreeNode::del(int key)
 {
     int half = (order >> 1);
@@ -153,14 +153,12 @@ TreeNode* InternalTreeNode::del(int key)
     TreeNode* p = child[i]->del(key);
     if(p && p->isLeaf())
     {
-	delete (LeafTreeNode*)p;
+	delete p;
 	delChild(i);
 	if(childCount < minChildCount)
 	    return this;
 	else
 	{
-	    //更新相应关键字
-	    keys[i - 1] = child[i]->getMinKey();
 	    return NULL;
 	}
     }
@@ -171,12 +169,10 @@ TreeNode* InternalTreeNode::del(int key)
 	return NULL;
     }
     
-    
-    
     //试图从兄弟结点中获取一个
     InternalTreeNode *q = NULL;
     int j = 0;
-    for(j = 0; j < childCount; j++)
+    for(j = i + 1; j < childCount; j++)
     {
 	q = (InternalTreeNode *)child[j];
 	if(q->childCount > minChildCount)
@@ -185,20 +181,24 @@ TreeNode* InternalTreeNode::del(int key)
     
     if(j < childCount)
     {
-	//找到有效的兄弟结点
-	int tempKey = q->keys[q->keyCount - 1];
-	TreeNode *s = q->child[q->childCount - 1];
-	int k = 0;
-	for(k = 0; k < keyCount; k++)
+	//可以了从兄弟结点中获取一个子结点
+	int l = i + 1;
+	
+	InternalTreeNode* t = (InternalTreeNode*)p;
+	do
 	{
-	    if(tempKey <= q->keys[k])
-		break;
-	}
-	p->addChild(k,s);
-	//调整兄弟结点
-	q->delChild(q->childCount -1);
-	if(i > 0)
-	    keys[i - 1] = child[i]->getMinKey();
+	    q = (InternalTreeNode*)child[l];
+	    InternalTreeNode* s = (InternalTreeNode*)q->child[0];
+	    t->addChild(t->childCount,s);
+	    //调整兄弟结点
+	    q->delChild(0);
+	    if(l > 0)
+		keys[l - 1] = child[l]->getMinKey();
+	    t = q;
+	    ++l;
+	    
+	}while(q->childCount < minChildCount);
+	
 	return NULL;
     }
     
@@ -210,13 +210,12 @@ TreeNode* InternalTreeNode::del(int key)
 	j = i - 1;
     else
 	j = i + 1;
-    p = merge(i,j);
-    delChild(p);
-    //delete (InternalTreeNode*)p;
+    
+    merge(i,j);
     
     if(childCount < minChildCount)
 	return this;
-    
+    keys[i - 1] = p->getMinKey();
     return NULL;
 }
 /**
@@ -239,14 +238,23 @@ TreeNode *InternalTreeNode::merge(int p,int q)
 	min = p;
     }
     
-    InternalTreeNode *s =(InternalTreeNode*) child[max];
-    InternalTreeNode *t =(InternalTreeNode*) child[min];
+    //std::cout << "max: " << max << " min: " << min << std::endl;
+    
+    InternalTreeNode *s = (InternalTreeNode*) child[max];
+    InternalTreeNode *t = (InternalTreeNode*) child[min];
     
     for(int i = 0; i < s->childCount; i++)
     {
 	t->addChild(t->childCount,s->child[i]);
     }
-    return s;
+    
+    delChild(max);
+    //std::cout << "delete: " << s->keys[0] << std::endl;
+    delete s;
+    
+    //std::cout << "merge finished -------------- " << std::endl;
+    
+    return t;
 }
 
 /**
@@ -258,6 +266,7 @@ void InternalTreeNode::delChild(int p)
 	child[i] = child[i + 1];
     --childCount;
     child[childCount] = NULL;
+    
     for(int i = p - 1; i < keyCount - 1; i++)
 	keys[i] = keys[i + 1];
     --keyCount;
@@ -269,7 +278,7 @@ void InternalTreeNode::delChild(TreeNode *p)
     for(i = 0; i < childCount; i++)
 	if(child[i] == p)
 	    break;
-    if(i  < childCount)
+    if(i < childCount)
 	delChild(i);
 }
 
@@ -343,6 +352,7 @@ LeafTreeNode::LeafTreeNode(int order)
     {
         keys[i] = -1;
     }
+    
     values = new int[order - 1];
     for(int i = 0; i < order - 1; i++)
     {
@@ -353,8 +363,11 @@ LeafTreeNode::~LeafTreeNode()
 {
     if(keys)
 	delete[] keys;
+    keys = NULL;
+    
     if(values)
 	delete[] values;
+    values = NULL;
 }
 int LeafTreeNode::search(int key)
 {
@@ -478,11 +491,13 @@ bool BTree::del(int key)
     if(p && !p->isLeaf())
     {
 	if(((InternalTreeNode*)p)->getChildCount() == 1)
+	{
 	    root = ((InternalTreeNode*)p)->getChild()[0];
+	}
     }
     else if(p  && p->isLeaf())
     {
-	delete ((LeafTreeNode*)p);
+	delete p;
 	root = NULL;
     }
     return true;
