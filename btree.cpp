@@ -426,6 +426,9 @@ TreeNode* LeafTreeNode::del(int key)
 	if(key == keys[i])
 	    break;
     }
+    if(i == keyCount)
+	return NULL;
+    
     for(int j = i; j < keyCount - 1; j++)
     {
 	keys[j] = keys[j + 1];
