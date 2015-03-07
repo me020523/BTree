@@ -3,9 +3,11 @@
  *For now, the invalid keys or values are integer and not less than zero.
  **/
 #include <stddef.h> //包含NULL的定义
+class BTree;
 class TreeNode
 {
 public:
+    friend class BTree;
     //whether the node is full or not
     virtual bool isFull() = 0;
     //从树中搜索指定的关键字，并返回其值，若不存在则返回-1
@@ -27,6 +29,7 @@ public:
     virtual void addChild(TreeNode *t) = 0;
     //删除当前结点指定位置处的子结点 
     virtual void delChild(int p) = 0;
+    virtual void delChild(TreeNode *p) = 0;
 protected:
     //在位置p处分割结点
     virtual TreeNode* split(int p) = 0;
@@ -56,6 +59,9 @@ public:
     void addChild(int p,TreeNode* t);
     void addChild(TreeNode *p);
     void delChild(int p);
+    void delChild(TreeNode *p);
+    TreeNode** getChild(){return child;};
+    int getChildCount(){return childCount;};
 protected:
     TreeNode* split(int p);
     TreeNode* merge(int p,int q);
@@ -89,6 +95,7 @@ public:
     void addChild(int p,TreeNode* t){};
     void addChild(TreeNode *t){};
     void delChild(int p){};
+    void delChild(TreeNode *p){};
 protected:
     TreeNode* split(int p){return NULL;};
     TreeNode* merge(int p,int q){return NULL;};

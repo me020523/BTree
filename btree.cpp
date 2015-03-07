@@ -21,8 +21,11 @@ InternalTreeNode::~InternalTreeNode()
     this->keyCount = 0;
     if(this->keys)
         delete[] this->keys;
+    this->keys = NULL;
+    
     if(this->child)
         delete[] this->child;
+    this->child = NULL;
 }
 int InternalTreeNode::search(int key)
 {
@@ -128,26 +131,47 @@ void InternalTreeNode::addChild(TreeNode *p)
  */
 TreeNode* InternalTreeNode::del(int key)
 {
-    int i = 0;
-    for(i = 0; i < keyCount; i++)
-    {
-	if(keys[i] >= key)
-	    break;
-    }
-    
-    TreeNode* p = child[i]->del(key);
-    if(!p && p->isLeaf())
-    {
-	delete (LeafTreeNode*)p;
-	return NULL;
-    }
-    else
-	return NULL;
-    
     int half = (order >> 1);
     if(order % 2)
 	half = half + 1;
     int minChildCount = half;
+    
+    int i = 0;
+    for(i = 0; i < keyCount; i++)
+    {
+	if(keys[i] == key)
+	{
+	    i++;
+	    break;
+	}
+	else if(keys[i] > key)
+	{
+	    break;
+	}
+    }
+    
+    TreeNode* p = child[i]->del(key);
+    if(p && p->isLeaf())
+    {
+	delete (LeafTreeNode*)p;
+	delChild(i);
+	if(childCount < minChildCount)
+	    return this;
+	else
+	{
+	    //更新相应关键字
+	    keys[i - 1] = child[i]->getMinKey();
+	    return NULL;
+	}
+    }
+    else if(!p)
+    {
+	if(i > 0)
+	    keys[i - 1] = child[i]->getMinKey();
+	return NULL;
+    }
+    
+    
     
     //试图从兄弟结点中获取一个
     InternalTreeNode *q = NULL;
@@ -173,14 +197,22 @@ TreeNode* InternalTreeNode::del(int key)
 	p->addChild(k,s);
 	//调整兄弟结点
 	q->delChild(q->childCount -1);
+	if(i > 0)
+	    keys[i - 1] = child[i]->getMinKey();
 	return NULL;
     }
     
     //未找到有效的兄弟结点，进行结点合并
-    merge(i,i + 1);
-    delChild(i);
-    delete (InternalTreeNode*)p;
-    --childCount;
+    j = 0;
+    if(i == 0)
+	j = 1;
+    else if(i == (childCount - 1))
+	j = i - 1;
+    else
+	j = i + 1;
+    p = merge(i,j);
+    delChild(p);
+    //delete (InternalTreeNode*)p;
     
     if(childCount < minChildCount)
 	return this;
@@ -210,9 +242,9 @@ TreeNode *InternalTreeNode::merge(int p,int q)
     InternalTreeNode *s =(InternalTreeNode*) child[max];
     InternalTreeNode *t =(InternalTreeNode*) child[min];
     
-    for(int i = t->childCount - 1; i >= 0; i--)
+    for(int i = 0; i < s->childCount; i++)
     {
-	s->addChild(0,t->child[i]);
+	t->addChild(t->childCount,s->child[i]);
     }
     return s;
 }
@@ -230,6 +262,15 @@ void InternalTreeNode::delChild(int p)
 	keys[i] = keys[i + 1];
     --keyCount;
     keys[keyCount] = -1;
+}
+void InternalTreeNode::delChild(TreeNode *p)
+{
+    int i = 0;
+    for(i = 0; i < childCount; i++)
+	if(child[i] == p)
+	    break;
+    if(i  < childCount)
+	delChild(i);
 }
 
 /**
@@ -263,11 +304,10 @@ TreeNode* InternalTreeNode::split(int p)
  */
 int InternalTreeNode::getMinKey()
 {
-//     if(isLeaf())
-// 	return keys[0];
-//     else
-// 	return child[0]->getMinKey();
-    return keys[0];
+    if(isLeaf())
+	return keys[0];
+    else
+	return child[0]->getMinKey();
 }
 /**
  * 返回子树的最大键值
@@ -275,11 +315,10 @@ int InternalTreeNode::getMinKey()
  */
 int InternalTreeNode::getMaxKey()
 {
-//     if(isLeaf())
-// 	return keys[keyCount - 1];
-//     else
-// 	return child[childCount - 1]->getMaxKey();
-    return keys[keyCount - 1];
+    if(isLeaf())
+	return keys[keyCount - 1];
+    else
+	return child[childCount - 1]->getMaxKey();
 }
 /**
  *遍历结点
@@ -360,6 +399,12 @@ TreeNode* LeafTreeNode::insert(int key,int value)
     
     return p;
 }
+/**
+ * 从叶子结点中删除(K,V)
+ * 返回值
+ * 	NULL: 结点非空
+ * 	this: 结点为空
+ */
 TreeNode* LeafTreeNode::del(int key)
 {
     int i = 0;
@@ -369,7 +414,10 @@ TreeNode* LeafTreeNode::del(int key)
 	    break;
     }
     for(int j = i; j < keyCount - 1; j++)
+    {
 	keys[j] = keys[j + 1];
+	values[j] = keys[j + 1];
+    }
     keyCount--;
     
     if(keyCount == 0)
@@ -426,7 +474,17 @@ bool BTree::del(int key)
 {
     if(root == NULL)
 	return false;
-    root->del(key);
+    TreeNode *p = root->del(key);
+    if(p && !p->isLeaf())
+    {
+	if(((InternalTreeNode*)p)->getChildCount() == 1)
+	    root = ((InternalTreeNode*)p)->getChild()[0];
+    }
+    else if(p  && p->isLeaf())
+    {
+	delete ((LeafTreeNode*)p);
+	root = NULL;
+    }
     return true;
 }
 void BTree::visit()
